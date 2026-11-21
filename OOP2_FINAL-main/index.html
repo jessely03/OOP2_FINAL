@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f8f8">
+  <title>NaviGo · Taipei after hours</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="trip-state.js" defer></script>
+  <script src="app.js" defer></script>
+  <script src="itinerary.js" defer></script>
+  <script src="map.js" defer></script>
+  <script src="expenses.js" defer></script>
+  <script src="group.js" defer></script>
+  <script src="startup.js" defer></script>
+</head>
+<body>
+  <button class="skip-link" type="button" data-action="skip">Skip to trip content</button>
+  <aside class="sidebar">
+    <a class="brand" href="#overview" aria-label="NaviGo home"><span class="logo" aria-hidden="true">➤</span>Navi<span>Go</span><small>GROUP TRAVEL PLANNER</small></a>
+    <a class="trip-link" href="#overview"><span class="trip-icon" aria-hidden="true">✦</span><span><strong>Taipei after hours</strong><small>Nov 20–22, 2026</small></span><span aria-hidden="true">›</span></a>
+    <nav aria-label="Trip workspace">
+      <a href="#overview" data-page="overview"><span aria-hidden="true">◈</span>Overview</a>
+      <a href="#itinerary" data-page="itinerary"><span aria-hidden="true">≡</span>Itinerary</a>
+      <a href="#calendar" data-page="calendar"><span aria-hidden="true">▦</span>Calendar</a>
+      <a href="#explore" data-page="explore"><span aria-hidden="true">◇</span>Explore places</a>
+      <a href="#expenses" data-page="expenses"><span aria-hidden="true">＄</span>Split bill</a>
+      <a href="#chat" data-page="chat"><span aria-hidden="true">▤</span>Group chat</a>
+    </nav>
+    <div class="sidebar-foot"><span class="avatar a0">Y</span><div><strong>Your workspace</strong><small>Local demo trip</small></div></div>
+  </aside>
+  <main>
+    <header class="topbar">
+      <nav class="breadcrumb" aria-label="Current location"><a href="#overview">Taipei after hours</a><span aria-hidden="true"> / </span><strong id="page-label" aria-current="page">Overview</strong></nav>
+      <div class="top-actions"><div class="avatars" aria-label="You, Jessie, Vivi, and Jason"><span class="avatar a0">Y</span><span class="avatar a1">JS</span><span class="avatar a2">V</span><span class="avatar a3">JN</span></div><button class="outline" data-action="share">Share trip ↗</button></div>
+    </header>
+    <div class="workspace">
+      <section class="hero" aria-label="Taipei after hours trip">
+        <div><p class="eyebrow">✦ &nbsp; TAIPEI, TAIWAN</p><h1>Taipei <em>after hours.</em></h1><p class="hero-meta"><span>▦ &nbsp; Nov 20–22, 2026</span><span>♧ &nbsp; 4 travelers</span></p></div>
+        <div class="stamp" aria-hidden="true"><span>TAIPEI · TW</span><b>✳</b><span>25° N &nbsp; 121° E</span></div>
+        <a class="credit" href="https://unsplash.com/es/fotos/una-ciudad-con-edificios-altos-A_8aUMSsurY" target="_blank" rel="noopener">Photo · Poh Soo Donald Soh</a>
+      </section>
+      <div id="view" tabindex="-1"></div>
+    </div>
+  </main>
+  <dialog id="editor"><form id="editor-form"></form></dialog>
+  <div id="notice" role="status" aria-live="polite"></div>
+</body>
+</html>
