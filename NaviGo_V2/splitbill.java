@@ -5,6 +5,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -14,10 +15,10 @@ import java.util.List;
  * NaviGo - Expense Management panel (Java Swing).
  */
 public class splitbill extends JPanel {
-    private static final Color PURPLE = new Color(36, 112, 104);
-    private static final Color PURPLE_HOVER = new Color(27, 90, 84);
-    private static final Color PURPLE_DARK = new Color(24, 49, 45);
-    private static final Color LAVENDER = new Color(224, 242, 238);
+    private static final Color PURPLE = new Color(126, 92, 196);
+    private static final Color PURPLE_HOVER = new Color(106, 73, 176);
+    private static final Color PURPLE_DARK = new Color(54, 38, 84);
+    private static final Color LAVENDER = new Color(235, 226, 252);
     private static final Color BG = new Color(245, 248, 247);
     private static final Color LINE = new Color(218, 232, 229);
     private static final Color MUTED = new Color(108, 128, 125);
@@ -31,6 +32,7 @@ public class splitbill extends JPanel {
 
     private final List<String> members = Arrays.asList("You", "Jessie", "Vivi", "Jason");
     private final Map<String, List<Expense>> tripExpensesMap = new LinkedHashMap<>();
+    private final Image heroPhoto = new ImageIcon(new File("assets", "taipei.jpg").getPath()).getImage();
 
     private String currentTripKey = "Taiwan Trip";
     private String currentTripName = "Taipei after hours";
@@ -46,7 +48,11 @@ public class splitbill extends JPanel {
     private JLabel balanceValue;
     private JLabel shareValue;
     private JPanel memberListPanel;
+
+    private JTable expenseTable;
     private DefaultTableModel expenseModel;
+    private final List<Expense> displayedExpenses = new ArrayList<>();
+
     private DefaultTableModel settlementModel;
 
     public splitbill() {
@@ -115,7 +121,7 @@ public class splitbill extends JPanel {
 
         JButton addExpense = new JButton("+  Add expense");
         stylePrimaryButton(addExpense);
-        addExpense.addActionListener(e -> showAddExpenseDialog());
+        addExpense.addActionListener(e -> showExpenseDialog(null));
 
         JPanel buttonWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 10));
         buttonWrapper.setOpaque(false);
@@ -170,18 +176,38 @@ public class splitbill extends JPanel {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                GradientPaint paint = new GradientPaint(
-                        0, 0, new Color(24, 78, 72),
-                        getWidth(), getHeight(), new Color(76, 138, 122)
-                );
-                g2.setPaint(paint);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 24, 24);
+                g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
-                g2.setColor(new Color(255, 255, 255, 22));
-                g2.fillOval(getWidth() - 200, -70, 230, 230);
-                g2.fillOval(getWidth() - 105, 55, 140, 140);
-                g2.setColor(new Color(226, 244, 146, 28));
-                g2.fillOval(getWidth() - 260, 75, 95, 95);
+                int width = getWidth();
+                int height = getHeight();
+
+                // Clip sudut membulat dulu
+                Shape clip = new java.awt.geom.RoundRectangle2D.Float(0, 0, width, height, 24, 24);
+                g2.setClip(clip);
+
+                // Fallback warna dasar kalau gambar belum ketemu
+                g2.setColor(new Color(24, 78, 72));
+                g2.fillRect(0, 0, width, height);
+
+                int imgW = heroPhoto.getWidth(null);
+                int imgH = heroPhoto.getHeight(null);
+                if (imgW > 0 && imgH > 0) {
+                    double scale = Math.max((double) width / imgW, (double) height / imgH);
+                    int drawW = (int) Math.ceil(imgW * scale);
+                    int drawH = (int) Math.ceil(imgH * scale);
+                    int x = (width - drawW) / 2;
+                    int y = (height - drawH) / 2;
+                    g2.drawImage(heroPhoto, x, y, drawW, drawH, null);
+                }
+
+                // Overlay gradasi gelap biar tulisan putih & lime tetap kontras
+                GradientPaint overlay = new GradientPaint(
+                        0, 0, new Color(15, 42, 39, 210),
+                        width, 0, new Color(24, 78, 72, 110)
+                );
+                g2.setPaint(overlay);
+                g2.fillRect(0, 0, width, height);
+
                 g2.dispose();
             }
         };
@@ -303,7 +329,26 @@ public class splitbill extends JPanel {
     private JPanel buildExpensesCard() {
         RoundedCard card = new RoundedCard(18, LINE);
         card.setLayout(new BorderLayout(0, 12));
-        card.add(sectionTitle("Recent expenses"), BorderLayout.NORTH);
+
+        JPanel topBar = new JPanel(new BorderLayout(8, 0));
+        topBar.setOpaque(false);
+        topBar.add(sectionTitle("Recent expenses"), BorderLayout.WEST);
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        actions.setOpaque(false);
+
+        JButton editBtn = new JButton("Edit");
+        styleMiniButton(editBtn, false);
+        editBtn.addActionListener(e -> editSelectedExpense());
+
+        JButton deleteBtn = new JButton("Delete");
+        styleMiniButton(deleteBtn, true);
+        deleteBtn.addActionListener(e -> deleteSelectedExpense());
+
+        actions.add(editBtn);
+        actions.add(deleteBtn);
+        topBar.add(actions, BorderLayout.EAST);
+        card.add(topBar, BorderLayout.NORTH);
 
         expenseModel = new DefaultTableModel(
                 new Object[]{"Expense", "Date", "Category", "Paid by", "Amount"}, 0) {
@@ -312,9 +357,11 @@ public class splitbill extends JPanel {
                 return false;
             }
         };
-        JTable table = new JTable(expenseModel);
-        styleTable(table, 4);
-        JScrollPane pane = new JScrollPane(table);
+        expenseTable = new JTable(expenseModel);
+        expenseTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        styleTable(expenseTable, 4);
+
+        JScrollPane pane = new JScrollPane(expenseTable);
         pane.setBorder(BorderFactory.createEmptyBorder());
         pane.getViewport().setBackground(Color.WHITE);
         card.add(pane, BorderLayout.CENTER);
@@ -354,11 +401,11 @@ public class splitbill extends JPanel {
         String[] items = {
                 "01  Log a bill and pick who paid upfront.",
                 "02  Check off everyone sharing that expense.",
-                "03  Net balances & fair shares update automatically.",
+                "03  Edit or delete any row anytime if needed.",
                 "04  Follow the settlement plan to square up cleanly."
         };
-        for (int i = 0; i < items.length; i++) {
-            JLabel line = new JLabel(items[i]);
+        for (String item : items) {
+            JLabel line = new JLabel(item);
             line.setFont(new Font("Segoe UI", Font.PLAIN, 13));
             line.setForeground(new Color(62, 82, 79));
             line.setBorder(new EmptyBorder(3, 0, 3, 0));
@@ -398,6 +445,31 @@ public class splitbill extends JPanel {
         if (rightAlignCol >= 0 && rightAlignCol < table.getColumnCount()) {
             table.getColumnModel().getColumn(rightAlignCol).setCellRenderer(rightRenderer);
         }
+    }
+
+    private void styleMiniButton(JButton button, boolean danger) {
+        Color fg = danger ? RED : PURPLE;
+        Color hoverBg = danger ? RED_SOFT : BG;
+        button.setBackground(Color.WHITE);
+        button.setForeground(fg);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setFocusPainted(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setBorder(new CompoundBorder(
+                new LineBorder(danger ? new Color(244, 206, 212) : LINE, 1, true),
+                new EmptyBorder(5, 10, 5, 10)
+        ));
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(hoverBg);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(Color.WHITE);
+            }
+        });
     }
 
     private void stylePrimaryButton(JButton button) {
@@ -441,9 +513,47 @@ public class splitbill extends JPanel {
         });
     }
 
-    private void showAddExpenseDialog() {
+    private Expense getSelectedExpense() {
+        int row = expenseTable.getSelectedRow();
+        if (row < 0 || row >= displayedExpenses.size()) {
+            showError(this, "Select an expense row first.");
+            return null;
+        }
+        return displayedExpenses.get(row);
+    }
+
+    private void editSelectedExpense() {
+        Expense target = getSelectedExpense();
+        if (target != null) {
+            showExpenseDialog(target);
+        }
+    }
+
+    private void deleteSelectedExpense() {
+        Expense target = getSelectedExpense();
+        if (target == null) return;
+
         Window owner = SwingUtilities.getWindowAncestor(this);
-        final JDialog dialog = new JDialog(owner, "Add an expense", Dialog.ModalityType.APPLICATION_MODAL);
+        int confirm = JOptionPane.showConfirmDialog(
+                owner,
+                "Delete \"" + target.name + "\" (" + formatMoney(target.amount) + ")?",
+                "Delete expense",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+        if (confirm == JOptionPane.YES_OPTION) {
+            currentExpenses().remove(target);
+            refreshDashboard();
+            JOptionPane.showMessageDialog(owner, "Expense deleted. Balances updated.",
+                    "NaviGo", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private void showExpenseDialog(Expense existing) {
+        boolean isEdit = existing != null;
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        final JDialog dialog = new JDialog(owner, isEdit ? "Edit expense" : "Add an expense",
+                Dialog.ModalityType.APPLICATION_MODAL);
         dialog.setSize(490, 620);
         dialog.setLocationRelativeTo(owner);
 
@@ -458,18 +568,26 @@ public class splitbill extends JPanel {
         c.weightx = 1;
         c.insets = new Insets(6, 4, 6, 4);
 
-        JLabel title = new JLabel("Add an expense");
+        JLabel title = new JLabel(isEdit ? "Edit expense" : "Add an expense");
         title.setFont(new Font("Segoe UI", Font.BOLD, 24));
         title.setForeground(PURPLE_DARK);
         form.add(title, c);
 
-        DatePicker datePicker = new DatePicker(LocalDate.now());
-
-        JTextField nameField = new JTextField();
-        JTextField amountField = new JTextField();
+        JTextField nameField = new JTextField(isEdit ? existing.name : "");
+        JTextField amountField = new JTextField(isEdit ? String.valueOf(existing.amount) : "");
         JComboBox<String> payerBox = new JComboBox<>(members.toArray(new String[0]));
+        if (isEdit && existing.payer != null) {
+            payerBox.setSelectedItem(existing.payer);
+        }
+
+        LocalDate initialDate = (isEdit && existing.date != null) ? existing.date : LocalDate.now();
+        DatePicker datePicker = new DatePicker(initialDate);
+
         JComboBox<String> categoryBox = new JComboBox<>(
                 new String[]{"Food & drinks", "Transport", "Accommodation", "Tickets", "Shopping", "Other"});
+        if (isEdit && existing.category != null) {
+            categoryBox.setSelectedItem(existing.category);
+        }
 
         c.gridy++;
         addFormRow(form, c, "Expense name", nameField);
@@ -477,10 +595,8 @@ public class splitbill extends JPanel {
         addFormRow(form, c, "Amount (NT$)", amountField);
         c.gridy++;
         addFormRow(form, c, "Paid by", payerBox);
-
         c.gridy++;
         addFormRow(form, c, "Date (YYYY-MM-DD)", datePicker);
-
         c.gridy++;
         addFormRow(form, c, "Category", categoryBox);
 
@@ -495,7 +611,8 @@ public class splitbill extends JPanel {
         checks.setBorder(new EmptyBorder(10, 12, 10, 12));
         Map<String, JCheckBox> participantChecks = new LinkedHashMap<>();
         for (String member : members) {
-            JCheckBox check = new JCheckBox(member, true);
+            boolean checked = !isEdit || existing.participants.contains(member);
+            JCheckBox check = new JCheckBox(member, checked);
             check.setOpaque(false);
             check.setFont(new Font("Segoe UI", Font.PLAIN, 13));
             check.setForeground(PURPLE_DARK);
@@ -509,7 +626,7 @@ public class splitbill extends JPanel {
         styleOutlineButton(cancel);
         cancel.addActionListener(e -> dialog.dispose());
 
-        JButton save = new JButton("Save expense");
+        JButton save = new JButton(isEdit ? "Update expense" : "Save expense");
         stylePrimaryButton(save);
         save.addActionListener(e -> {
             String name = nameField.getText().trim();
@@ -536,19 +653,35 @@ public class splitbill extends JPanel {
             }
             LocalDate date;
             try {
-                date = LocalDate.parse(datePicker.getText().trim());
+                date = datePicker.getDate();
             } catch (Exception ex) {
                 showError(dialog, "Please use the date format YYYY-MM-DD.");
                 return;
             }
 
-            Expense expense = new Expense(name, amount, (String) payerBox.getSelectedItem(),
-                    date, (String) categoryBox.getSelectedItem(), selected);
-            tripExpensesMap.computeIfAbsent(currentTripKey, k -> new ArrayList<>()).add(expense);
+            String payer = (String) payerBox.getSelectedItem();
+            String category = (String) categoryBox.getSelectedItem();
+
+            if (isEdit) {
+                existing.name = name;
+                existing.amount = amount;
+                existing.payer = payer;
+                existing.date = date;
+                existing.category = category;
+                existing.participants = new ArrayList<>(selected);
+            } else {
+                Expense expense = new Expense(name, amount, payer, date, category, selected);
+                tripExpensesMap.computeIfAbsent(currentTripKey, k -> new ArrayList<>()).add(expense);
+            }
+
             refreshDashboard();
             dialog.dispose();
-            JOptionPane.showMessageDialog(owner, "Expense saved. Balances and settlement plan updated.",
-                    "NaviGo", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(
+                    owner,
+                    isEdit ? "Expense updated." : "Expense saved. Balances and settlement plan updated.",
+                    "NaviGo",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
         });
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
@@ -681,12 +814,14 @@ public class splitbill extends JPanel {
         memberListPanel.repaint();
 
         expenseModel.setRowCount(0);
+        displayedExpenses.clear();
         List<Expense> reversed = new ArrayList<>(expenses);
         Collections.reverse(reversed);
         if (reversed.isEmpty()) {
             expenseModel.addRow(new Object[]{"No expenses yet", "–", "Click + Add expense", "–", "NT$ 0"});
         } else {
             for (Expense expense : reversed) {
+                displayedExpenses.add(expense);
                 String dateStr = expense.date != null ? expense.date.format(SHORT_DATE) : "–";
                 expenseModel.addRow(new Object[]{
                         expense.name,
