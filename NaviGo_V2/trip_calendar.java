@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-class CalendarPanel extends JPanel {
+class trip_calendar extends JPanel {
     private static final Color PAPER = new Color(246, 247, 239);
     private static final Color GREEN = new Color(32, 89, 74);
     private static final Color INK = new Color(24, 49, 45);
@@ -34,7 +34,7 @@ class CalendarPanel extends JPanel {
     private YearMonth month;
     private List<Activity> activities;
 
-    public CalendarPanel() {
+    public trip_calendar() {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBackground(PAPER);
         setBorder(new EmptyBorder(20, 24, 24, 24));
@@ -263,7 +263,7 @@ class CalendarPanel extends JPanel {
         SwingUtilities.invokeLater(() -> {
             JFrame window = new JFrame("NaviGo | Trip Calendar");
             window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-            JScrollPane scroll = new JScrollPane(new CalendarPanel());
+            JScrollPane scroll = new JScrollPane(new trip_calendar());
             scroll.setBorder(null);
             scroll.getVerticalScrollBar().setUnitIncrement(18);
             window.setContentPane(scroll);

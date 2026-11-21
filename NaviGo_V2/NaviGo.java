@@ -30,7 +30,7 @@ public class NaviGo extends JFrame {
 
     // =========================================================================
     // [OPSIONAL / KOMENTAR] Aktifkan jika file panel terpisah sudah tersedia:
-    private final CalendarPanel calendarPanel = new CalendarPanel();
+    private final trip_calendar calendarPanel = new trip_calendar();
     private final splitbill expensesPanel = new splitbill();
     // private final ExplorePanel explorePanel = new ExplorePanel();
     // private final GroupChatPanel groupChatPanel = new GroupChatPanel();
