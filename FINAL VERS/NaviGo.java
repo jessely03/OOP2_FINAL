@@ -44,6 +44,7 @@ public class NaviGo extends JFrame implements Navigator {
     private final CalendarPanel calendarPanel = new CalendarPanel();
     private final SplitBill expensesPanel = new SplitBill();
     private final GroupPage groupPage = new GroupPage(this);
+    private final MapPanel mapPanel = new MapPanel();
 
     private final ArrayList<Trip> trips = new ArrayList<>();
     private Trip trip;
@@ -260,7 +261,10 @@ public class NaviGo extends JFrame implements Navigator {
                 );
                 yield expensesPanel;
             }
-            case 4 -> explore();
+            case 4 -> {
+                mapPanel.setDestination(trip.destination);
+                yield mapPanel;
+            }
             case 5 -> groupPage;
             default -> throw new IllegalArgumentException("Unknown page: " + page);
         };
@@ -921,3 +925,4 @@ public class NaviGo extends JFrame implements Navigator {
         });
     }
 }
+
