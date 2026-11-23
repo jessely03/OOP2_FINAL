@@ -19,7 +19,7 @@ public class GoogleMapsService {
 
     // Replace with your Google Cloud API Key (enable Places API & Maps Static API)
     private static final String API_KEY = System.getenv().getOrDefault(
-            "GOOGLE_MAPS_API_KEY", "YOUR_GOOGLE_MAPS_API_KEY"
+            "GOOGLE_MAPS_API_KEY", "AIzaSyAMOGdy_sbG6N16dX7ra3uk5fP1-iKP_8w"
     );
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
@@ -205,4 +205,5 @@ public class GoogleMapsService {
         if (t.contains("museum") || t.contains("place_of_worship") || t.contains("art_gallery")) return "culture";
         return "city";
     }
+
 }
